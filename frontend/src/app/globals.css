@@ -1,0 +1,19 @@
+@import "tailwindcss";
+@source "../src";
+
+:root {
+  --as-bg: #050505;
+  --as-surface: #0c0c0c;
+  --as-border: #1a1a1a;
+  --as-muted: #71717a;
+  --as-accent: #fafafa;
+}
+
+body {
+  background-color: var(--as-bg);
+  color: var(--as-accent);
+  font-family: var(--font-inter, "Inter"), "Helvetica Neue", Helvetica, Arial, sans-serif;
+  font-weight: 400;
+  -webkit-font-smoothing: antialiased;
+  min-height: 100vh;
+}
