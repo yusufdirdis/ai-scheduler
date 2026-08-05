@@ -20,7 +20,7 @@ class Business(Base):
     __tablename__ = "businesses"
 
     id = Column(Integer, primary_key=True, index=True)
-    owner_user_id = Column(String, index=True)  # Supabase user UUID
+    owner_user_id = Column(String, unique=True, index=True)  # Supabase user UUID
     name = Column(String, index=True)
     timezone = Column(String, default="America/New_York")
     business_type = Column(String, default="restaurant")  # future: other verticals

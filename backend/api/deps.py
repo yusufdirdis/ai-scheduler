@@ -14,6 +14,7 @@ from typing import Annotated
 import jwt
 from fastapi import Depends, Header, HTTPException, status
 from jwt.exceptions import InvalidTokenError
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from core.config import settings
@@ -35,13 +36,28 @@ class AuthContext:
 
 def _get_or_create_business_for_owner(db: Session, owner_id: str, name: str = "My Business") -> Business:
     """Looked up by owner_user_id, not a hardcoded id — lets Postgres assign the PK
-    normally so its sequence never desyncs from an explicit-id insert."""
+    normally so its sequence never desyncs from an explicit-id insert.
+
+    A frontend page commonly fires several authenticated requests in parallel
+    (e.g. Promise.all on first dashboard load). Concurrent requests for a
+    brand-new owner can all miss the SELECT below before any of them commits,
+    so owner_user_id has a DB-level unique constraint as the real guard —
+    on conflict, the loser rolls back and re-reads the winner's row instead
+    of erroring or leaving a duplicate business behind.
+    """
     b = db.query(Business).filter(Business.owner_user_id == owner_id).first()
     if b:
         return b
     b = Business(owner_user_id=owner_id, name=name)
     db.add(b)
-    db.commit()
+    try:
+        db.commit()
+    except IntegrityError:
+        db.rollback()
+        b = db.query(Business).filter(Business.owner_user_id == owner_id).first()
+        if not b:
+            raise
+        return b
     db.refresh(b)
     seed_default_roles(db, b.id)
     return b
