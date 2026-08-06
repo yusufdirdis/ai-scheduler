@@ -111,3 +111,13 @@ class AvailabilityDaySlotIn(BaseModel):
 class AvailabilityEntryIn(BaseModel):
     """Full replace of one employee's availability for one week."""
     slots: list[AvailabilityDaySlotIn] = Field(default_factory=list)
+
+
+# ---- Schedules (Phase 4: solver + LLM pipeline, manual scheduling) ----------------
+
+class ScheduleCreate(BaseModel):
+    week_start_date: date
+
+
+class ManualAssignmentUpdate(BaseModel):
+    employee_id: Optional[int] = None  # None = unassign the slot

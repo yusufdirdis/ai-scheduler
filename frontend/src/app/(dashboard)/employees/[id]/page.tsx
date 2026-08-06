@@ -271,6 +271,11 @@ function AssignRoleForm({
   const [isPrimary, setIsPrimary] = useState(false);
 
   useEffect(() => {
+    // Keeps the selection valid when the available roles list shrinks (e.g. after
+    // assigning the last one) — a single corrective re-render, not a cascade.
+    // Deliberately omits roleId from deps: this should only re-run when the roles
+    // list itself changes, not on every selection change.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     if (!roles.find((r) => r.id === roleId)) setRoleId(roles[0]?.id ?? 0);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [roles]);
@@ -312,6 +317,9 @@ function RateSkillForm({
   const [notes, setNotes] = useState("");
 
   useEffect(() => {
+    // Same as above: keeps the selection valid when the available skills list shrinks.
+    // Deliberately omits skillId from deps — should only re-run when skills changes.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     if (!skills.find((s) => s.id === skillId)) setSkillId(skills[0]?.id ?? 0);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [skills]);

@@ -8,6 +8,8 @@ import type {
   EmployeeSummary,
   LaborRules,
   Role,
+  ScheduleDetail,
+  ScheduleSummary,
   ShiftTemplate,
   Skill,
 } from "@/lib/types";
@@ -135,4 +137,25 @@ export const setEmployeeAvailability = (
   apiJson<AvailabilityDetail>(`/api/availability/${employeeId}?week_start_date=${weekStartDate}`, {
     method: "PUT",
     body: JSON.stringify({ slots }),
+  });
+
+// ---- Schedules (AI + manual) ------------------------------------------------------
+
+export const listSchedules = () => apiJson<ScheduleSummary[]>("/api/schedules");
+
+export const createSchedule = (weekStartDate: string) =>
+  apiJson<ScheduleDetail>("/api/schedules", {
+    method: "POST",
+    body: JSON.stringify({ week_start_date: weekStartDate }),
+  });
+
+export const getSchedule = (id: number) => apiJson<ScheduleDetail>(`/api/schedules/${id}`);
+
+export const buildSchedule = (id: number) =>
+  apiJson<ScheduleDetail>(`/api/schedules/${id}/build`, { method: "POST" });
+
+export const updateScheduleAssignment = (scheduleId: number, slotId: number, employeeId: number | null) =>
+  apiJson<ScheduleDetail>(`/api/schedules/${scheduleId}/assignments/${slotId}`, {
+    method: "PATCH",
+    body: JSON.stringify({ employee_id: employeeId }),
   });

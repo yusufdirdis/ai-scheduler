@@ -6,7 +6,7 @@ load_dotenv()
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from api import availability, businesses, coverage, employees
+from api import availability, businesses, coverage, employees, schedules
 from core.config import settings
 
 logger = logging.getLogger(__name__)
@@ -28,6 +28,7 @@ app.include_router(businesses.router, prefix="/api")
 app.include_router(employees.router, prefix="/api")
 app.include_router(coverage.router, prefix="/api")
 app.include_router(availability.router, prefix="/api")
+app.include_router(schedules.router, prefix="/api")
 
 
 @app.get("/health")

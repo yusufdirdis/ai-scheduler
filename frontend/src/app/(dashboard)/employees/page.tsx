@@ -24,7 +24,12 @@ export default function EmployeesPage() {
       .finally(() => setLoading(false));
   }
 
-  useEffect(refresh, []);
+  useEffect(() => {
+    // refresh() toggles the loading flag before an async fetch — an intentional,
+    // safe re-render, not the unbounded cascading-render pattern this rule targets.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    refresh();
+  }, []);
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();

@@ -123,3 +123,39 @@ export interface AvailabilityDetail {
   submitted_at: string | null;
   slots: AvailabilityDaySlot[];
 }
+
+export type ScheduleStatus = "draft" | "ai_generated" | "manager_reviewing" | "published" | "archived";
+
+export interface ScheduleSummary {
+  id: number;
+  week_start_date: string;
+  status: ScheduleStatus;
+  unfilled_slot_count: number;
+  generated_at: string | null;
+  published_at: string | null;
+}
+
+export interface ShiftAssignmentInfo {
+  employee_id: number | null;
+  employee_name: string | null;
+  assigned_by: "solver" | "llm" | "manager_manual";
+  rationale: string | null;
+  is_manually_edited: boolean;
+}
+
+export interface ScheduleSlot {
+  id: number;
+  role_id: number;
+  role_name: string;
+  skill_id: number | null;
+  skill_name: string | null;
+  min_skill_rating: number | null;
+  date: string;
+  start_time: string;
+  end_time: string;
+  assignment: ShiftAssignmentInfo | null;
+}
+
+export interface ScheduleDetail extends ScheduleSummary {
+  slots: ScheduleSlot[];
+}

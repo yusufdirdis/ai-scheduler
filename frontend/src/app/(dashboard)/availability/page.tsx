@@ -49,8 +49,10 @@ export default function AvailabilityPage() {
   }
 
   useEffect(() => {
+    // refresh() toggles the loading flag before an async fetch — an intentional,
+    // safe re-render, not the unbounded cascading-render pattern this rule targets.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     if (weekStart) refresh(weekStart);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [weekStart]);
 
   if (!business || !weekStart) {
@@ -150,6 +152,9 @@ function AvailabilityEditor({
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    // Resets the loading flag when employeeId/week changes — intentional, not the
+    // unbounded cascading-render pattern this rule targets.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setLoading(true);
     getEmployeeAvailability(employeeId, weekStartDateStr)
       .then((detail) => {
