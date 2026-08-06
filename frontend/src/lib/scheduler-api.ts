@@ -1,5 +1,8 @@
 import { apiJson } from "@/lib/apiFetch";
 import type {
+  AvailabilityDaySlot,
+  AvailabilityDetail,
+  AvailabilityStatusRow,
   Business,
   EmployeeDetail,
   EmployeeSummary,
@@ -114,4 +117,22 @@ export const addAttendanceRecord = (
   apiJson<EmployeeDetail>(`/api/employees/${employeeId}/attendance`, {
     method: "POST",
     body: JSON.stringify(payload),
+  });
+
+// ---- Availability (manual entry) ------------------------------------------------
+
+export const getAvailabilityStatus = (weekStartDate: string) =>
+  apiJson<AvailabilityStatusRow[]>(`/api/availability/status?week_start_date=${weekStartDate}`);
+
+export const getEmployeeAvailability = (employeeId: number, weekStartDate: string) =>
+  apiJson<AvailabilityDetail>(`/api/availability/${employeeId}?week_start_date=${weekStartDate}`);
+
+export const setEmployeeAvailability = (
+  employeeId: number,
+  weekStartDate: string,
+  slots: AvailabilityDaySlot[]
+) =>
+  apiJson<AvailabilityDetail>(`/api/availability/${employeeId}?week_start_date=${weekStartDate}`, {
+    method: "PUT",
+    body: JSON.stringify({ slots }),
   });

@@ -1,10 +1,10 @@
 """Shared request/response schemas for the manager dashboard API."""
 from __future__ import annotations
 
-from datetime import time
+from datetime import date, time
 from typing import Optional
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, model_validator
 
 
 # ---- Business + labor rules -------------------------------------------------
@@ -90,3 +90,24 @@ class AttendanceRecordCreate(BaseModel):
     status: str = Field(pattern="^(on_time|late|no_show|called_out|left_early)$")
     minutes_late: Optional[int] = Field(None, ge=0)
     notes: Optional[str] = None
+
+
+# ---- Availability (manual entry — Phase 3; SMS-sourced entries land in Phase 5) ----
+
+class AvailabilityDaySlotIn(BaseModel):
+    """One available window on one date. A day with no slot is simply absent —
+    it's not an explicit 'unavailable' record, just nothing offered."""
+    date: date
+    start_time: time
+    end_time: time
+
+    @model_validator(mode="after")
+    def _check_order(self):
+        if self.end_time <= self.start_time:
+            raise ValueError("end_time must be after start_time")
+        return self
+
+
+class AvailabilityEntryIn(BaseModel):
+    """Full replace of one employee's availability for one week."""
+    slots: list[AvailabilityDaySlotIn] = Field(default_factory=list)

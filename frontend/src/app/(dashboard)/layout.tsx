@@ -4,6 +4,7 @@ const NAV_ITEMS = [
   { href: "/dashboard", label: "Overview" },
   { href: "/employees", label: "Employees" },
   { href: "/coverage", label: "Coverage" },
+  { href: "/availability", label: "Availability" },
   { href: "/labor-rules", label: "Settings" },
 ];
 

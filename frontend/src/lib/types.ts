@@ -101,3 +101,25 @@ export const ATTENDANCE_STATUSES: AttendanceRecord["status"][] = [
   "called_out",
   "left_early",
 ];
+
+export type AvailabilityStatus = "pending" | "manual_entry" | "submitted" | "no_response" | "parse_failed";
+
+export interface AvailabilityStatusRow {
+  employee_id: number;
+  full_name: string;
+  status: AvailabilityStatus;
+  submitted_at: string | null;
+  slot_count: number;
+}
+
+export interface AvailabilityDaySlot {
+  date: string;
+  start_time: string;
+  end_time: string;
+}
+
+export interface AvailabilityDetail {
+  status: AvailabilityStatus;
+  submitted_at: string | null;
+  slots: AvailabilityDaySlot[];
+}
