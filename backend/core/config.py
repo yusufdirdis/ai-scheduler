@@ -36,6 +36,8 @@ class Settings(BaseSettings):
     TWILIO_ACCOUNT_SID: str = ""
     TWILIO_AUTH_TOKEN: str = ""
     TWILIO_FROM_NUMBER: str = ""
+    # Preferred over TWILIO_FROM_NUMBER when set — required for A2P 10DLC traffic.
+    TWILIO_MESSAGING_SERVICE_SID: str = ""
 
     # Signed employee schedule-view links
     EMPLOYEE_LINK_SIGNING_SECRET: str = "dev-insecure-change-me"

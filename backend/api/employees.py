@@ -23,6 +23,7 @@ from db.models import (
     Skill,
 )
 from db.session import get_db
+from services.phone import normalize_phone_number
 
 router = APIRouter(prefix="/employees", tags=["employees"])
 
@@ -138,10 +139,15 @@ def list_employees(auth: AuthDep, db: Session = Depends(get_db)):
 
 @router.post("")
 def create_employee(payload: EmployeeCreate, auth: AuthDep, db: Session = Depends(get_db)):
+    try:
+        phone_number = normalize_phone_number(payload.phone_number)
+    except ValueError as e:
+        raise HTTPException(422, str(e))
+
     employee = Employee(
         business_id=auth.business_id,
         full_name=payload.full_name,
-        phone_number=payload.phone_number,
+        phone_number=phone_number,
     )
     db.add(employee)
     try:
@@ -164,7 +170,13 @@ def update_employee(
     employee_id: int, payload: EmployeeUpdate, auth: AuthDep, db: Session = Depends(get_db)
 ):
     employee = _scoped_employee(db, auth.business_id, employee_id)
-    for field, value in payload.model_dump(exclude_unset=True).items():
+    updates = payload.model_dump(exclude_unset=True)
+    if "phone_number" in updates:
+        try:
+            updates["phone_number"] = normalize_phone_number(updates["phone_number"])
+        except ValueError as e:
+            raise HTTPException(422, str(e))
+    for field, value in updates.items():
         setattr(employee, field, value)
     try:
         db.commit()
