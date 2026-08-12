@@ -3,13 +3,14 @@ from __future__ import annotations
 from datetime import date as date_type
 from datetime import datetime, timedelta, timezone
 
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 
 from api.deps import AuthDep
 from api.schemas import AvailabilityEntryIn
 from db.models import AvailabilitySlot, AvailabilitySubmission, Business, Employee
-from db.session import get_db
+from db.session import SessionLocal, get_db
+from jobs.tasks import trigger_availability_request_now
 from services.weeks import is_valid_week_start
 
 router = APIRouter(prefix="/availability", tags=["availability"])
@@ -180,3 +181,22 @@ def set_employee_availability(
 
     db.commit()
     return get_employee_availability(employee_id, auth, week_start_date, db)
+
+
+def _run_request_now_task(business_id: int) -> None:
+    """Runs after the HTTP response has already been sent — opens its own DB
+    session since the request's session is closed by then."""
+    db = SessionLocal()
+    try:
+        trigger_availability_request_now(db, business_id)
+    finally:
+        db.close()
+
+
+@router.post("/request-now")
+def request_availability_now(auth: AuthDep, background_tasks: BackgroundTasks):
+    """Ad-hoc trigger for the manager's 'Request availability now' button — fires
+    the same eligibility logic as the weekly job (skip anyone who already
+    answered), for every active employee, regardless of the configured day/time."""
+    background_tasks.add_task(_run_request_now_task, auth.business_id)
+    return {"status": "queued"}

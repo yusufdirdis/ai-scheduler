@@ -51,6 +51,10 @@ async def inbound_sms(request: Request):
         from_number = None
     body_text = params.get("Body", "")
     message_sid = params.get("MessageSid")
+    # Present when Advanced Opt-Out is enabled on the Messaging Service (it is, per our
+    # A2P registration) — Twilio still forwards STOP/START/HELP here for our audit log,
+    # but has already handled suppressing/resuming future sends and the auto-reply itself.
+    opt_out_type = params.get("OptOutType")
 
     db = SessionLocal()
     try:
@@ -60,6 +64,25 @@ async def inbound_sms(request: Request):
 
         if not employee:
             logger.warning("Inbound SMS from unrecognized number %s — dropping", from_number)
+            return _twiml_response()
+
+        if opt_out_type:
+            # Twilio already handled the actual opt-out/opt-in mechanics and sent its own
+            # confirmation reply — just log it, and explicitly do NOT run this through the
+            # availability parser (a "STOP" reply is not an availability answer).
+            db.add(
+                SmsMessage(
+                    business_id=employee.business_id,
+                    employee_id=employee.id,
+                    direction="inbound",
+                    phone_number=from_number,
+                    twilio_sid=message_sid,
+                    message_type=f"opt_{opt_out_type.lower()}",
+                    body_text=body_text,
+                    status="received",
+                )
+            )
+            db.commit()
             return _twiml_response()
 
         business = db.query(Business).filter(Business.id == employee.business_id).first()

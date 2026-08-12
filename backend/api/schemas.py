@@ -3,8 +3,11 @@ from __future__ import annotations
 
 from datetime import date, time
 from typing import Optional
+from zoneinfo import available_timezones
 
-from pydantic import BaseModel, Field, model_validator
+from pydantic import BaseModel, Field, field_validator, model_validator
+
+_VALID_TIMEZONES = available_timezones()
 
 
 # ---- Business + labor rules -------------------------------------------------
@@ -17,6 +20,13 @@ class BusinessUpdate(BaseModel):
     week_start_day: Optional[int] = Field(None, ge=0, le=6)
     availability_request_day_of_week: Optional[int] = Field(None, ge=0, le=6)
     availability_request_time: Optional[str] = None
+
+    @field_validator("timezone")
+    @classmethod
+    def _check_timezone(cls, v: Optional[str]) -> Optional[str]:
+        if v is not None and v not in _VALID_TIMEZONES:
+            raise ValueError(f"{v!r} is not a valid IANA timezone (e.g. 'America/New_York')")
+        return v
 
 
 class LaborRuleUpdate(BaseModel):
