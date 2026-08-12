@@ -139,6 +139,9 @@ export const setEmployeeAvailability = (
     body: JSON.stringify({ slots }),
   });
 
+export const requestAvailabilityNow = () =>
+  apiJson<{ status: string }>("/api/availability/request-now", { method: "POST" });
+
 // ---- Schedules (AI + manual) ------------------------------------------------------
 
 export const listSchedules = () => apiJson<ScheduleSummary[]>("/api/schedules");

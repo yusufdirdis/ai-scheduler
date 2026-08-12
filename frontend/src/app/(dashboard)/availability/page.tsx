@@ -3,7 +3,13 @@
 import { useEffect, useState } from "react";
 import { Badge, Button, Card, ErrorText, Input } from "@/components/ui/primitives";
 import { ApiError } from "@/lib/apiFetch";
-import { getBusiness, getEmployeeAvailability, getAvailabilityStatus, setEmployeeAvailability } from "@/lib/scheduler-api";
+import {
+  getBusiness,
+  getEmployeeAvailability,
+  getAvailabilityStatus,
+  requestAvailabilityNow,
+  setEmployeeAvailability,
+} from "@/lib/scheduler-api";
 import type { AvailabilityDaySlot, AvailabilityStatusRow, Business } from "@/lib/types";
 import { addDays, formatDate, formatWeekRange, weekDates, weekStartOnOrBefore } from "@/lib/weeks";
 
@@ -30,6 +36,8 @@ export default function AvailabilityPage() {
   const [editingEmployeeId, setEditingEmployeeId] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [requesting, setRequesting] = useState(false);
+  const [requestResult, setRequestResult] = useState<string | null>(null);
 
   useEffect(() => {
     getBusiness()
@@ -55,6 +63,20 @@ export default function AvailabilityPage() {
     if (weekStart) refresh(weekStart);
   }, [weekStart]);
 
+  async function handleRequestNow() {
+    setRequesting(true);
+    setRequestResult(null);
+    setError(null);
+    try {
+      await requestAvailabilityNow();
+      setRequestResult("Requests queued — texts will go out shortly.");
+    } catch (err) {
+      setError(err instanceof ApiError ? String(err.detail) : "Failed to request availability");
+    } finally {
+      setRequesting(false);
+    }
+  }
+
   if (!business || !weekStart) {
     return <p className="text-sm text-[var(--as-muted)]">{error ?? "Loading…"}</p>;
   }
@@ -64,8 +86,18 @@ export default function AvailabilityPage() {
   return (
     <div className="flex flex-col gap-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-xl font-medium">Availability</h1>
-        <div className="flex items-center gap-3">
+        <div>
+          <h1 className="text-xl font-medium">Availability</h1>
+          <p className="text-xs text-[var(--as-muted)]">
+            Requests always go out for the upcoming week, regardless of which week you&apos;re viewing below.
+          </p>
+        </div>
+        <Button disabled={requesting} onClick={handleRequestNow}>
+          {requesting ? "Requesting…" : "Request availability now"}
+        </Button>
+      </div>
+
+      <div className="flex items-center justify-end gap-3">
           <Button variant="secondary" onClick={() => setWeekStart(addDays(weekStart, -7))}>
             ← Prev week
           </Button>
@@ -73,10 +105,10 @@ export default function AvailabilityPage() {
           <Button variant="secondary" onClick={() => setWeekStart(addDays(weekStart, 7))}>
             Next week →
           </Button>
-        </div>
       </div>
 
       <ErrorText>{error}</ErrorText>
+      {requestResult && <p className="text-xs text-emerald-400">{requestResult}</p>}
 
       {loading ? (
         <p className="text-sm text-[var(--as-muted)]">Loading…</p>
