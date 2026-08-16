@@ -10,7 +10,7 @@ from datetime import date
 
 from sqlalchemy.orm import Session
 
-from db.models import Employee, SmsMessage
+from db.models import Business, Employee, SmsMessage
 from integrations.twilio_client import send_sms
 
 logger = logging.getLogger("ai_scheduler.sms_delivery")
@@ -69,3 +69,22 @@ def send_availability_request(
         db, business_id, employee, "availability_request", body,
         related_availability_submission_id=submission_id,
     )
+
+
+def send_enrollment_confirmation(db: Session, business_id: int, employee: Employee) -> SmsMessage:
+    """Sent the moment a manager adds an employee — the text-based confirmation
+    half of a verbal + text double opt-in. Verbal consent alone is the hardest
+    opt-in method to get through A2P 10DLC campaign review because there's
+    nothing external to check; this message is what actually gives a reviewer
+    (and the employee) a real, Twilio-logged record that consent happened and
+    what they signed up for, restating message types/frequency/rates/opt-out
+    right in the first text they ever receive."""
+    business = db.query(Business).filter(Business.id == business_id).first()
+    business_name = business.name if business else "your employer"
+    first_name = employee.full_name.split()[0] if employee.full_name else "there"
+    body = (
+        f"Hi {first_name}, you've been added to {business_name}'s text scheduling alerts. "
+        "You'll get texts about your work availability and schedule, about 2-4 msgs/week. "
+        "Msg&data rates may apply. Reply STOP to opt out, HELP for help."
+    )
+    return _deliver(db, business_id, employee, "enrollment_confirmation", body)

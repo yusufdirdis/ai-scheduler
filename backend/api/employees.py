@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
@@ -22,8 +22,9 @@ from db.models import (
     Role,
     Skill,
 )
-from db.session import get_db
+from db.session import SessionLocal, get_db
 from services.phone import normalize_phone_number
+from services.sms_delivery import send_enrollment_confirmation
 
 router = APIRouter(prefix="/employees", tags=["employees"])
 
@@ -137,8 +138,22 @@ def list_employees(auth: AuthDep, db: Session = Depends(get_db)):
     return [_employee_summary(db, e) for e in employees]
 
 
+def _send_enrollment_confirmation_task(business_id: int, employee_id: int) -> None:
+    """Runs after the HTTP response has already been sent — opens its own DB
+    session since the request's session is closed by then."""
+    db = SessionLocal()
+    try:
+        employee = db.query(Employee).filter(Employee.id == employee_id).first()
+        if employee:
+            send_enrollment_confirmation(db, business_id, employee)
+    finally:
+        db.close()
+
+
 @router.post("")
-def create_employee(payload: EmployeeCreate, auth: AuthDep, db: Session = Depends(get_db)):
+def create_employee(
+    payload: EmployeeCreate, auth: AuthDep, background_tasks: BackgroundTasks, db: Session = Depends(get_db)
+):
     try:
         phone_number = normalize_phone_number(payload.phone_number)
     except ValueError as e:
@@ -156,6 +171,7 @@ def create_employee(payload: EmployeeCreate, auth: AuthDep, db: Session = Depend
         db.rollback()
         raise HTTPException(409, "An employee with this phone number already exists")
     db.refresh(employee)
+    background_tasks.add_task(_send_enrollment_confirmation_task, auth.business_id, employee.id)
     return _employee_detail(db, employee)
 
 
